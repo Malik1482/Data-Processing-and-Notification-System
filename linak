@@ -1,0 +1,48 @@
+aws ses verify-email-identity --email-address malikzohaibali863@gmail.com --region ap-south-1
+
+
+aws cloudformation create-stack \
+  --stack-name SalesNotificationStack \
+  --template-body file://template.yaml \
+  --parameters file://parameters.json \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region ap-south-
+
+
+
+
+  parameters
+
+  aws cloudformation deploy \
+  --template-file template.yaml \
+  --stack-name sales-system-stack \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region ap-south-1 \
+  --parameter-overrides \
+    DBUsername=admin \
+    DBPassword=MySecurePass123 \
+    EmailSubscriber=malikzohaibali863@gmail.com
+
+
+RDS deploment comand:
+aws cloudformation deploy --template-file Secrets_Manager.yaml --stack-name SecretsManager --capabilities CAPABILITY_NAMED_IAM --region ap-south-1 --parameter-overrides DBUsername=dbadmin DBPassword=MyPassword123
+  
+  
+  
+  
+THIS COMND CHEK YOUR FILE SENTEX IS VOLD
+aws cloudformation validate-template --template-body file://Security_Group.yaml --region ap-south-1
+
+
+
+if stack delete then use this command 
+aws cloudformation delete-stack --stack-name vpc-stack --region ap-south-1
+
+
+
+deployment comand for SNS_Topic:
+aws cloudformation deploy --template-file SNS_Topic.yaml --stack-name SNS_Topic --capabilities CAPABILITY_NAMED_IAM --region ap-south-1 --parameter-overrides EmailSubscriber=malikzohaibali863@gmail.com
+
+
+deployment comand :
+aws cloudformation deploy --template-file CloudWatch_Events.yaml --stack-name CloudWatchEvents --capabilities CAPABILITY_NAMED_IAM --region ap-south-1

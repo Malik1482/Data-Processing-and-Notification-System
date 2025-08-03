@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample Stack
+
+Parameters:
+  DBUsername:
+    Type: String
+  DBPassword:
+    Type: String  
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: SalesDB Subnet Group
+      SubnetIds:
+        - !ImportValue MyStack-PrivateSubnet1
+        - !ImportValue MyStack-PrivateSubnet2
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: salesdb
+      AllocatedStorage: 20
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups: []
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !ImportValue RDSSecurityGroupId
+Outputs:
+  RDSInstanceEndpoint:
+    Description: The endpoint address of the RDS instance
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    Export:
+      Name: SalesDBEndpoint
+
+  RDSInstanceDBName:
+    Description: The DB name of the RDS instance
+    Value: salesdb
+    Export:
+      Name: SalesDBName

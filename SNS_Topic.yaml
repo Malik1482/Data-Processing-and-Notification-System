@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sales Data Processing and Notification System
+Parameters:
+  EmailSubscriber:
+    Type: String
+    Description: Email address to receive sales notifications
+Resources:
+
+  SalesSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref EmailSubscriber
+Outputs:
+  SalesSNSTopicArn:
+    Description: ARN of the SNS topic
+    Value: !Ref SalesSNSTopic
+    Export:
+      Name: SalesSNSTopicArn

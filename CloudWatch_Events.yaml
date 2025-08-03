@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudWatch Event Rule to trigger Lambda function daily
+
+Resources:
+  DailySchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        - Arn: !ImportValue SalesProcessorFunctionArn
+          Id: SalesProcessor
+
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !ImportValue SalesProcessorFunctionArn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailySchedule.Arn
+Outputs:
+  CloudWatchRuleArn:
+    Description: ARN of the CloudWatch Event Rule
+    Value: !GetAtt DailySchedule.Arn
+    Export:
+      Name: CloudWatchRuleArn
+
+
+

@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda function to process sales data, connect to RDS, use Secrets Manager, send notifications via SNS, and run on CloudWatch schedule
+
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: SalesProcessorFunction
+
+  SecretArn:
+    Type: String
+    Description: ARN of the RDS credentials secret in Secrets Manager
+
+  DBName:
+    Type: String
+    Default: salesdb
+
+Resources:
+
+  SalesProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !ImportValue MyStack-LambdaExecutionRoleArn
+      Timeout: 30
+      MemorySize: 128
+      VpcConfig:
+        SubnetIds:
+          - !ImportValue MyStack-PrivateSubnet1
+          - !ImportValue MyStack-PrivateSubnet2
+        SecurityGroupIds:
+          - !ImportValue LambdaSecurityGroupId
+      Environment:
+        Variables:
+          SECRET_ARN: !Ref SecretArn
+          DB_NAME: !Ref DBName
+          RDS_HOST: !ImportValue SalesDBEndpoint
+          SNS_TOPIC_ARN: !ImportValue SalesSNSTopicArn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import pymysql
+          import os
+
+          def lambda_handler(event, context):
+              secrets_client = boto3.client('secretsmanager')
+              sns_client = boto3.client('sns')
+
+              secret_arn = os.environ['SECRET_ARN']
+              db_name = os.environ['DB_NAME']
+              rds_host = os.environ['RDS_HOST']
+              sns_topic_arn = os.environ['SNS_TOPIC_ARN']
+
+              secret = secrets_client.get_secret_value(SecretId=secret_arn)
+              credentials = json.loads(secret['SecretString'])
+
+              conn = pymysql.connect(
+                  host=rds_host,
+                  user=credentials['username'],
+                  password=credentials['password'],
+                  database=db_name,
+                  connect_timeout=5
+              )
+
+              with conn.cursor() as cursor:
+                  cursor.execute("SELECT COUNT(*) FROM orders")
+                  order_count = cursor.fetchone()[0]
+
+              message = f"Total orders in database: {order_count}"
+              sns_client.publish(TopicArn=sns_topic_arn, Message=message)
+
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps({'message': message})
+              }
+
+Outputs:
+  LambdaFunctionArn:
+    Value: !GetAtt SalesProcessorFunction.Arn
+    Export:
+      Name: SalesProcessorFunctionArn
