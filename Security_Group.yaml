@@ -1,18 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Security Groups for Lambda and RDS
+Description: Security Groups for Lambda, RDS, Secrets Manager, and SNS
 
 Resources:
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow Lambda to access RDS
+      GroupDescription: Allow Lambda to access RDS, Secrets Manager, and SNS
       VpcId: !ImportValue MyStack-VPCId
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
-          CidrIp: 0.0.0.0/0  # TEMP until RDS SG ID available
+          CidrIp: 0.0.0.0/0  # For RDS
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0  # For Secrets Manager / SNS if VPC endpoints not used
 
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -23,6 +27,28 @@ Resources:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  SecretsManagerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Secrets Manager VPC Endpoint to accept from Lambda
+      VpcId: !ImportValue MyStack-VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  SNSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SNS VPC Endpoint to accept from Lambda
+      VpcId: !ImportValue MyStack-VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
           SourceSecurityGroupId: !Ref LambdaSecurityGroup
 
 Outputs:
@@ -37,3 +63,15 @@ Outputs:
     Value: !Ref RDSSecurityGroup
     Export:
       Name: RDSSecurityGroupId
+
+  SecretsManagerSecurityGroupId:
+    Description: Secrets Manager Security Group ID
+    Value: !Ref SecretsManagerSecurityGroup
+    Export:
+      Name: SecretsManagerSecurityGroupId
+
+  SNSSecurityGroupId:
+    Description: SNS Security Group ID
+    Value: !Ref SNSSecurityGroup
+    Export:
+      Name: SNSSecurityGroupId

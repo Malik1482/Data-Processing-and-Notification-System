@@ -5,7 +5,7 @@ Resources:
   DailySchedule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: rate(1 day)
+      ScheduleExpression: rate(5 minutes)
       State: ENABLED
       Targets:
         - Arn: !ImportValue SalesProcessorFunctionArn
